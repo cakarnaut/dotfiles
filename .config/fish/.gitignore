@@ -1,0 +1,9 @@
+# Dizinler
+completions/
+conf.d/
+functions/
+.crush/
+
+# Dosyalar
+fish_variables
+secrets.fish

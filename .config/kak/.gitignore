@@ -1,0 +1,10 @@
+# Dizinler
+autoload/
+bundle/
+colors/
+custom-plugins/
+.crush/
+
+# Dosyalar
+
+

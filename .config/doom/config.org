@@ -1,0 +1,601 @@
+#+TITLE:Doom Config
+#+Property: header-args :tangLe config.el
+
+* INTRODUCTION
+$DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+Place your private configuration here! Remember, you do not need to run 'doom sync' after modifying this file!
+
+Some functionality uses this to identify you, e.g. GPG configuration, email clients, file templates and snippets.
+
+Here are some additional functions/macros that could help you configure Doom:
+
+- ~load!~ for loading external *.el files relative to this one
+- ~use-package!~ for configuring packages
+- ~after!~ for running code after a package has loaded
+- ~add-load=-path~ for adding directories to the `load-path', relative to this file. Emacs searches the `load-path' when you load packages with ~require~ or ~use-package~.
+- ~map!~ for binding new keys
+
+ To get information about any of these functions/macros, move the cursor over the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
+ This will open documentation for it, including demos of how they are used.
+
+ You can also try 'gd' (or 'C-c c d') to jump to their definition and see how they are implemented.
+
+* USER INFO's
+Some functionality uses this to identify you, e.g. GPG configuration, email
+clients, file templates and snippets.
+
+#+begin_src emacs-lisp
+(setq user-full-name "John Doe Falan"
+      user-mail-address "doesjohnalive@falan.com")
+#+end_src
+
+* COSMETIC CONFIGURATIONS
+Doom exposes five (optional) variables for controlling fonts in Doom. Here are the three important ones:
+
++ ~doom-font~
++ ~doom-variable-pitch-font~
++ ~doom-big-font~ -- used for ~doom-big-font-mode~; use this for presentations or streaming.
+
+ They all accept either a font-spec, font string ("Input Mono-12"), or xlfd font string. You generally only need these two:
+
+#+begin_src emacs-lisp
+(setq doom-font (font-spec :family "Fantasque Sans Mono" :weight 'bold :size 18 )
+      doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font" :size 21)
+      doom-big-font (font-spec :family "Source Code Pro" :size 22))
+(after! doom-themes
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t))
+(custom-set-faces!
+  '(font-lock-comment-face :slant italic)
+  '(font-lock-keyword-face :slant italic)
+  '(doom-modeline-buffer-modified :foreground "orange"))
+#+end_src
+
+There are two ways to load a theme. Both assume the theme is installed and
+available. You can either set `doom-theme' or manually load a theme with the
+load-theme' function. This is the default:
+
+#+begin_src emacs-lisp
+(setq doom-theme 'doom-moonlight)
+
+(setq doom-modeline-height 20)
+(setq doom-modeline-icon t)
+(defun doom-modeline-conditional-buffer-encoding ()
+  "We expect the encoding to be LF UTF-8, so only show the modeline when this is not the case"
+  (setq-local doom-modeline-buffer-encoding
+              (unless (and (memq (plist-get (coding-system-plist buffer-file-coding-system) :category)
+                                 '(coding-category-undecided coding-category-utf-8))
+                           (not (memq (coding-system-eol-type buffer-file-coding-system) '(1 2))))
+                t)))
+
+(add-hook 'after-change-major-mode-hook #'doom-modeline-conditional-buffer-encoding)
+
+(setq display-line-numbers-type 'relative)
+
+(setq doom-themes-treemacs-theme "doom-colors")
+
+;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+;;  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+
+#+end_src
+
+If you use `org' and don't want your org files in the default location below, change `org-directory'. It must be set before org loads!
+
+* LSP
+C++ configuration for lsp
+
+#+begin_src emacs-lisp
+(after!  cc-mode
+(set-eglot-client! 'cc-mode '("clangd" "-j=3" "--clang-tidy")))
+
+(after! corfu
+  (setq! corfu-auto-delay 0.1
+         corfu-auto-prefix 1
+         corfu-preview-current nil))
+
+(add-hook! some-mode (add-hook 'completion-at-point-functions #'some-capf depth t))
+
+#+end_src
+
+* ORG-MODE GENERAL
+
+#+begin_src emacs-lisp
+(defadvice! shut-up-org-problematic-hooks (fn &rest args)
+  :around #'org-fancy-priorities-mode
+  :around #'org-superstar-mode
+  (ignore-errors (apply fn args)))
+
+;; (after! org
+;;   (setq org-directory "..."
+;;         org-agenda-files '("..."   )         ;;org-default-notes-file (expand-file-name "notes.org" org-directory)
+    (after! org
+        (setq org-directory "..."
+         org-agenda-files '("...")
+        org-ellipsis " ▼ "
+        ;;org-log-done 'time
+        org-hide-emphasis-markers t
+        ;; ex. of org-link-abbrev-alist in action
+        ;; [[arch-wiki:Name_of_Page][Description]]
+        org-link-abbrev-alist    ; This overwrites the default Doom org-link-abbrev-list
+          '(("google" . "http://www.google.com/search?q=")
+            ("arch-wiki" . "https://wiki.archlinux.org/index.php/")
+            ("ddg" . "https://duckduckgo.com/?q=")
+            ("wiki" . "https://en.wikipedia.org/wiki/"))
+        org-todo-keywords        ; This overwrites the default Doom org-todo-keywords
+          '((sequence
+             "TODO(t)"           ; A task that is ready to be tackled
+             "NEXT(n)"           ; New!
+             "PC(b)"             ; PC Stuffs
+             "GYM(g)"            ; Things to accomplish at the gym
+             "PROJ(p)"           ; A project that contains other tasks
+             "IN-PROGRESS(w)"           ; Something is holding up this task
+             "|"                 ; The pipe necessary to separate "active" states and "inactive" states
+             "DONE(d)"           ; Task has been completed
+             "CANCELLED(c)")
+            (sequence
+             "[ ]"
+             "[-]"
+             "[?]"
+             "|"
+             "[x]"))
+        org-todo-keyword-faces
+            '(
+        ("TODO" . (:foreground "GoldenRod" :weight bold))
+        ("NEXT" . (:foreground "DeepPink" :weight bold))
+        ("PC" . (:foreground "Cyan" :weight bold))
+        ("GYM" . (:foreground "goldenrod" :weight bold))
+        ("CANCELLED" . (:foreground "IndianRed"));; :weight bold))
+        ("DONE" . (:foreground "LimeGreen" :weight bold))
+        ("PROJ" . (:foreground "AntiqueWhite1" :weight bold))
+        ("IN-PROGRESS" . (:foreground "DarkOrchid" :weight bold))
+        )));) ; Task has been cancelled
+
+(after! hl-todo
+  (setq hl-todo-keyword-faces
+        `(
+        ("TODO" . (:foreground "GoldenRod" :weight bold))
+        ("NEXT" . (:foreground "DeepPink" :weight bold))
+        ("PC" . (:foreground "Cyan" :weight bold))
+        ("GYM" . (:foreground "goldenrod" :weight bold))
+        ("CANCELLED" . (:foreground "IndianRed"));; :weight bold))
+        ("DONE" . (:foreground "LimeGreen" :weight bold))
+        ("PROJ" . (:foreground "AntiqueWhite1" :weight bold))
+        ("IN-PROGRESS" . (:foreground "DarkOrchid" :weight bold))
+                )))
+
+(setq org-log-note-headings '((done        . "CLOSING NOTE %t")
+                              (state       . "State %-12s from %-12S %t")
+                              (note        . "Note taken on %t")
+                              (reschedule  . "Schedule changed on %t: %S -> %s")
+                              (delschedule . "Not scheduled, was %S on %t")
+                              (redeadline  . "Deadline changed on %t: %S -> %s")
+                              (deldeadline . "Removed deadline, was %S on %t")
+                              (refile      . "Refiled on %t")
+                              (clock-out   . "")))
+#+end_src
+
+* ORG AGENDA
+
+#+begin_src emacs-lisp
+(use-package! org-super-agenda
+  :commands (org-super-agenda-mode))
+(after! org-agenda
+  (let ((inhibit-message t))
+  (org-super-agenda-mode)))
+
+(setq org-agenda-skip-scheduled-if-done t
+      org-agenda-skip-deadline-if-done t
+      org-agenda-include-deadlines t
+      org-super-agenda-header-separator ?_
+      org-agenda-tags-column 100 ;; from testing this seems to be a good value
+      org-agenda-start-with-log-mode t
+      org-log-state-notes-into-drawer t
+      org-deadline-warning-days 4
+      org-log-done 'note
+      org-agenda-current-time-string "ᐊ┈┈┈┈┈┈┈┈┈┈┈┈┈ Now"
+      org-fontify-done-headline t
+      org-log-reschedule "note"
+      )
+
+(setq org-agenda-custom-commands
+      '(("o" "Overview"
+         ((agenda "" ((org-agenda-span 'day)
+                      (org-agenda-start-day )
+                      ;;(org-agenda-use-time-grid t)
+                      ;;(org-agenda-compact-blocks t)
+                      (org-agenda-block-separator ?_)
+                      (org-super-agenda-groups
+                       '((:name "Today"
+                          :time-grid t
+                          :date today
+                          :todo "TODAY"
+                          :scheduled today
+                          :order 1)))))
+          (alltodo "" ((org-agenda-overriding-header "")
+                       (org-super-agenda-groups
+                        '((:name "Next to do"
+                           :todo "NEXT"
+                           :order 1)
+                          (:name "Important"
+                           :priority "A"
+                           :order 6)
+                          (:name "Due Today"
+                           :deadline today
+                           :order 2)
+                          (:name "Due Soon"
+                           :deadline future
+                           :order 8)
+                          (:name "Overdue"
+                           :deadline past
+                           :face error
+                           :order 7)
+                          (:name "University-Stuffs"
+                           :tag ("Assignment" "Uni")
+                           :order 10)
+                          (:name "Issues"
+                           :tag "Issue"
+                           :order 12)
+                          (:name "Computer-Stuffs"
+                           :todo "PC"
+                           :tag ("Cpp" "Linux")
+                           :order 13)
+                          (:name "Projects"
+                           :todo "PROJ"
+                           :order 14)
+                          (:name "Training & Diet"
+                           :todo "GYM"
+                           :tag ("Bjj" "Fitness" "Running")
+                           :order 15)
+                          (:name "To read & To Watch"
+                           :tag ("Read" "Watch")
+                           :order 30)
+                          (:name "In-Progress"
+                           :todo "IN-PROGRESS"
+                           :order 20)
+                          (:name "Trivial"
+                           :priority<= "E"
+                           :tag ("Trivial" "Unimportant")
+                           :todo ("SOMEDAY" )
+                           :order 90)
+                          (:discard (:tag ("Chore" "Routine" "Daily")))))))))))
+
+#+end_src
+
+* ORG CAPTURE
+#+begin_src emacs-lisp
+;; (use-package! doct
+;;   :commands doct)
+
+;; (after! org-capture
+;; ;;  <<prettify-capture>>
+
+;;   (defun +doct-icon-declaration-to-icon (declaration)
+;;     "Convert :icon declaration to icon"
+;;     (let ((name (pop declaration))
+;;           (set  (intern (concat "all-the-icons-" (plist-get declaration :set))))
+;;           (face (intern (concat "all-the-icons-" (plist-get declaration :color))))
+;;           (v-adjust (or (plist-get declaration :v-adjust) 0.01)))
+;;       (apply set `(,name :face ,face :v-adjust ,v-adjust))))
+
+;;   (defun +doct-iconify-capture-templates (groups)
+;;     "Add declaration's :icon to each template group in GROUPS."
+;;     (let ((templates (doct-flatten-lists-in groups)))
+;;       (setq doct-templates (mapcar (lambda (template)
+;;                                      (when-let* ((props (nthcdr (if (= (length template) 4) 2 5) template))
+;;                                                  (spec (plist-get (plist-get props :doct) :icon)))
+;;                                        (setf (nth 1 template) (concat (+doct-icon-declaration-to-icon spec)
+;;                                                                       "\t"
+;;                                                                       (nth 1 template))))
+;;                                      template)
+;;                                    templates))))
+
+;;   (add-hook 'org-capture-mode-hook #'org-align-all-tags)
+;;   (setq doct-after-conversion-functions '(+doct-iconify-capture-templates))
+
+
+;;   (defun set-org-capture-templates ()
+;;     (setq org-capture-templates
+;;           (doct `(("Personal todo"
+;;                    :keys "t"
+;;                    :icon ("checklist" :set "octicon" :color "green")
+;;                    :file "..."
+;;                    :prepend t
+;;                    :headline "PERSONAL TODO"
+;;                    :type entry
+;;                    :template ("* %{time-or-todo} %? %{extra}"
+;;                               "%i %a")
+;;                    :children (("To-Do"
+;;                                :keys "t"
+;;                                :icon ("check_box" :set "material" :color "yellow")
+;;                                :prepend nil
+;;                                :time-or-todo "TODO"
+;;                                :heading "Yapılacaklar"
+;;                                :extra "")
+;;                               ("Next"
+;;                                :keys "n"
+;;                                :icon ("skip_next" :set "material" :color "pink")
+;;                                :prepend nil
+;;                                :time-or-todo "NEXT"
+;;                                :heading "Günübirlik"
+;;                                :extra "")
+;;                               ("Sorun"
+;;                                :keys "s"
+;;                                :icon ("issue-opened" :set "octicon" :color "orange")
+;;                                :prepend nil
+;;                                :time-or-todo "TODO"
+;;                                :heading "Sorun"
+;;                                :extra ":Issues:")))
+;;                   ("Personal note" :keys "n"
+;;                    :icon ("sticky-note-o" :set "faicon" :color "LimeGreen")
+;;                    :file "..."
+;;                    :prepend t
+;;                    :headline "Basit Notlar"
+;;                    :type entry
+;;                    :template ("* %?"
+;;                               "%i %a"))
+;;                   ("Tasks" :keys "k"
+;;                    :icon ("inbox" :set "octicon" :color "yellow")
+;;                    :file "..."
+;;                    :prepend t
+;;                    :headline "ÖDEVLER"
+;;                    :type entry
+;;                    :template-file "..."
+;;                    ;; :template ("* TODO %?  %^G%{extra}"
+;;                    ;;            "%i %a \n** Gereklilikler"
+;;                    ;;            "%i %a \n** Notlar")
+;;                    :children (("Genel Ödev"
+;;                                :keys "k"
+;;                                :icon ("assignment" :set "material" :color "yellow")
+;;                                :extra "")
+;;                               ("Süre Sınırlı Ödev"
+;;                                :keys "d"
+;;                                :icon ("timer" :set "material" :color "orange" :v-adjust -0.1)
+;;                                :extra "\nDEADLINE: %^{Deadline:}t")
+;;                               ("Planlananmış ödev"
+;;                                :keys "s"
+;;                                :icon ("calendar" :set "octicon" :color "blue")
+;;                                :extra "\nSCHEDULED: %^{Start time:}t")))
+;;                   ("Yazılım"
+;;                    :keys "c"
+;;                    :icon ("github" :set "faicon" :color "silver")
+;;                    :prepend t
+;;                    :type entry
+;;                    :file "..."
+;;                    :headline "Deneme"
+;;                    :template-file "..."
+;;                    :custom (:time-or-todo "")
+;;                    :children (("C++ Öğrenimi"
+;;                                :keys "t"
+;;                                :icon ("cplusplus" :set "alltheicon" :color "green")
+;;                                ;;:time-or-todo "PC"
+;;                                :extra ":Cpp:" )
+;;                               ("Linux"
+;;                                :keys "n"
+;;                                :icon ("linux" :set "faicon" :color "wheat")
+;;                                ;;:time-or-todo "PC"
+;;                                :extra ":Linux:")
+;;                               ))
+;;                    ("Interesting" :keys "i"
+;;                    :icon ("eye" :set "faicon" :color "lcyan")
+;;                    :file "..."
+;;                    :prepend t
+;;                    :headline "Interesting"
+;;                    :type entry
+;;                    :template ("* [ ] %{desc} %? %{extra}"
+;;                               "%i %a")
+;;                    :children (("Webpage"
+;;                                :keys "w"
+;;                                :icon ("globe" :set "faicon" :color "green")
+;;                                :desc "%(org-cliplink-capture) "
+;;                                :extra ":read:web:")
+;;                               ("Article" :keys "a"
+;;                                :icon ("file-text" :set "octicon" :color "yellow")
+;;                                :desc ""
+;;                                :extra ":read:reaserch:")
+;;                               ("Information" :keys "i"
+;;                                :icon ("info-circle" :set "faicon" :color "blue")
+;;                                :desc ""
+;;                                :extra ":read:info:")
+;;                               ("Idea" :keys "I"
+;;                                :icon ("bubble_chart" :set "material" :color "silver")
+;;                                :desc ""
+;;                                :extra ":idea:")))
+;;                   ;; ("\tCentralised project templates"
+;;                   ;;  :keys "o"
+;;                   ;;  :type entry
+;;                   ;;  :prepend t
+;;                   ;;  :template ("* %{time-or-todo} %?"
+;;                   ;;             "%i"
+;;                   ;;             "%a")
+;;                   ;;  :children (("Project todo"
+;;                   ;;              :keys "t"
+;;                   ;;              :prepend nil
+;;                   ;;              :time-or-todo "TODO"
+;;                   ;;              :heading "Tasks"
+;;                   ;;              :file +org-capture-central-project-todo-file)
+;;                   ;;             ("Project note"
+;;                   ;;              :keys "n"
+;;                   ;;              :time-or-todo "%U"
+;;                   ;;              :heading "Notes"
+;;                   ;;              :file +org-capture-central-project-notes-file)
+;;                   ;;             ("Project changelog"
+;;                   ;;              :keys "c"
+;;                   ;;              :time-or-todo "%U"
+;;                   ;;              :heading "Unreleased"
+;;                   ;;              :file +org-capture-central-project-changelog-file)))
+;;                   ))))
+
+;;   (set-org-capture-templates)
+;;   (unless (display-graphic-p)
+;;     (add-hook 'server-after-make-frame-hook
+;;               (defun org-capture-reinitialise-hook ()
+;;                 (when (display-graphic-p)
+;;                   (set-org-capture-templates)
+;;                   (remove-hook 'server-after-make-frame-hook
+;;                                #'org-capture-reinitialise-hook))))))
+
+
+#+end_src
+* TREEMACS
+#+begin_src emacs-lisp
+(setq treemacs-width 25)
+#+end_src
+
+* ELFEED
+#+begin_src emacs-lisp
+;; (setq elfeed-goodies/entry-pane-size 0.5)
+;; (add-hook! 'elfeed-search-mode-hook 'elfeed-update)
+;; (setq elfeed-feeds' ("https://feeds.bbci.co.uk/turkce/rss.xml"
+;;                      "https://archlinux.org/feeds/news/"
+;;                      "https://www.reddit.com/r/emacs.rss"
+;;                      "defence-blog.com/feed"
+;;                      ))
+#+end_src
+
+* MODELINE
+
+#+begin_src emacs-lisp
+(setq doom-modeline-major-mode-icon t)
+#+end_src
+
+* ZEN MODE
+#+begin_src emacs-lisp
+(setq +zen-text-scale 0.8)
+#+end_src
+
+* PYTHON
+
+#+begin_src emacs-lisp
+;; (custom-set-variables
+;;  '(conda-anaconda-home "/opt/miniconda3"))
+
+;; (setq conda-env-home-directory (expand-file-name "...")
+;;       conda-env-subdirectory "envs")
+#+end_src
+
+* YASNIPPET
+#+begin_src emacs-lisp
+;;(setq yas-snippet-dirs "~/.emacs.d/plugins/yasnippet/")
+#+end_src
+* UNICODE
+#+begin_src emacs-lisp
+ ;; (defun unicode-fonts-setup-h (frame)
+ ;;    "Run unicode-fonts-setup, then remove the hook."
+ ;;    (progn
+ ;;      (select-frame frame)
+ ;;      (unicode-fonts-setup)
+ ;;      (message "Removing unicode-fonts-setup to after-make-frame-functions hook")
+ ;;      (remove-hook 'after-make-frame-functions 'unicode-fonts-setup-h)
+ ;;      ))
+
+ ;;  (add-hook 'after-make-frame-functions 'unicode-fonts-setup-h nil)
+#+end_src
+
+* TRAMP
+
+#+begin_src emacs-lisp
+(setq tramp-default-method "docker")
+(after! tramp
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
+#+end_src
+
+* GPTEL
+#+begin_src emacs-lisp
+(use-package! gptel
+  :config
+  (setq! gptel-api-key "SOMEAPI"))
+#+end_src
+
+* TABS
+#+begin_src emacs-lisp
+;; (after! centaur-tabs
+;;   (centaur-tabs-mode -1)
+;;   (centaur-tabs-headline-match)
+;;   (setq centaur-tabs-height 36
+;;         centaur-tabs-set-icons t
+;;         centaur-tabs-modified-marker "o"
+;;         centaur-tabs-close-button "×"
+;;         centaur-tabs-style "chamfer"
+;;         centaur-tabs-set-bar 'above
+;;         centaur-tabs-gray-out-icons 'buffer)
+;;   (centaur-tabs-change-fonts "P22 Underground Book" 160))
+
+(use-package! centaur-tabs
+  :init
+  (setq centaur-tabs-enable-key-bindings t)
+  :config
+  (setq centaur-tabs-style "wave"
+        centaur-tabs-height 32
+        centaur-tabs-set-icons t
+        centaur-tabs-show-new-tab-button nil
+        centaur-tabs-set-modified-marker t
+        centaur-tabs-show-navigation-buttons t
+        centaur-tabs-set-bar 'left
+        centaur-tabs-show-count nil
+        centaur-tabs-label-fixed-length 15
+        ;; centaur-tabs-gray-out-icons 'buffer
+        ;; centaur-tabs-plain-icons t
+        x-underline-at-descent-line t
+        centaur-tabs-left-edge-margin nil)
+  (centaur-tabs-change-fonts (face-attribute 'default :font) 110)
+  (centaur-tabs-headline-match)
+  ;; (centaur-tabs-enable-buffer-alphabetical-reordering)
+  ;; (setq centaur-tabs-adjust-buffer-order t)
+  (centaur-tabs-mode t)
+  (setq uniquify-separator "/")
+  (setq uniquify-buffer-name-style 'forward)
+  (defun centaur-tabs-buffer-groups ()
+    "`centaur-tabs-buffer-groups' control buffers' group rules.
+
+Group centaur-tabs with mode if buffer is derived from `eshell-mode' `emacs-lisp-mode' `dired-mode' `org-mode' `magit-mode'.
+All buffer name start with * will group to \"Emacs\".
+Other buffer group by `centaur-tabs-get-group-name' with project name."
+    (list
+     (cond
+      ;; ((not (eq (file-remote-p (buffer-file-name)) nil))
+      ;; "Remote")
+      ((or (string-equal "*" (substring (buffer-name) 0 1))
+           (memq major-mode '(magit-process-mode
+                              magit-status-mode
+                              magit-diff-mode
+                              magit-log-mode
+                              magit-file-mode
+                              magit-blob-mode
+                              magit-blame-mode
+                              )))
+       "Emacs")
+      ((derived-mode-p 'prog-mode)
+       "Editing")
+      ((derived-mode-p 'dired-mode)
+       "Dired")
+      ((memq major-mode '(helpful-mode
+                          help-mode))
+       "Help")
+      ((memq major-mode '(org-mode
+                          org-agenda-clockreport-mode
+                          org-src-mode
+                          org-agenda-mode
+                          org-beamer-mode
+                          org-indent-mode
+                          org-bullets-mode
+                          org-cdlatex-mode
+                          org-agenda-log-mode
+                          diary-mode))
+       "OrgMode")
+      (t
+       (centaur-tabs-get-group-name (current-buffer))))))
+  :hook
+  (dashboard-mode . centaur-tabs-local-mode)
+  (term-mode . centaur-tabs-local-mode)
+  (calendar-mode . centaur-tabs-local-mode)
+  (org-agenda-mode . centaur-tabs-local-mode)
+  :bind
+  ("C-<prior>" . centaur-tabs-backward)
+  ("C-<next>" . centaur-tabs-forward)
+  ("C-S-<prior>" . centaur-tabs-move-current-tab-to-left)
+  ("C-S-<next>" . centaur-tabs-move-current-tab-to-right)
+  (:map evil-normal-state-map
+        ("g t" . centaur-tabs-forward)
+        ("g T" . centaur-tabs-backward)))
+#+end_src
